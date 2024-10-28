@@ -12,5 +12,5 @@
 
 # How to run application in debug mode
 ```
-flask --app dev-tunnel/server.py --debug run
+python dev-tunnel/server.py --debug
 ```
