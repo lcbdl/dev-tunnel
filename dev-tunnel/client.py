@@ -21,15 +21,32 @@ def forward_request_to_local_server(request_data):
 
 
 if __name__ == '__main__':
+    # fetch default arguments from .env file
     config = dotenv_values('.env')
+    # setup arguments
     parser = ArgumentParser()
-    parser.add_argument("-s", "--server", dest="server_host", default=config['SERVER_HOST'],
-                        help="Dev-tunnel server host name or IP address")
-    parser.add_argument("-p", "--port", dest="server_port", default=config['SERVER_PORT'],
-                        help="Dev-tunnel server port")
+    if bool(config) and 'SERVER_HOST' in config:
+        parser.add_argument("-s", "--server", dest="server_host", default=config['SERVER_HOST'],
+                            help="Dev-tunnel server host name or IP address")
+    else:
+        parser.add_argument("-s", "--server", dest="server_host",
+                            help="Dev-tunnel server host name or IP address")
+
+    if bool(config) and 'SERVER_PORT' in config:
+        parser.add_argument("-p", "--port", dest="server_port", default=config['SERVER_PORT'],
+                            help="Dev-tunnel server port")
+    else:
+        parser.add_argument("-p", "--port", dest="server_port",
+                            help="Dev-tunnel server port")
+
     args = parser.parse_args()
 
+    if not bool(config) and len(sys.argv) <= 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
     print(args.server_host + ':' + args.server_port)
+
     # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     #     s.connect((HOST, PORT))
     #     while True:

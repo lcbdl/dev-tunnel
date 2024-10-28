@@ -2,23 +2,29 @@ from flask import Flask, request
 import requests
 import socket
 import threading
+import queue
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT = 65432        # The port used by the server
+PORT = 5432        # The port used by the server
 
 app = Flask(__name__)
+request_queue = queue.Queue()
 
 
-@app.route('/', methods=['GET', 'POST'])
-def handle_request():
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def handle_request(path):
     # Extract request data (e.g., URL, method, headers, body)
     request_data = {
         'url': request.url,
         'method': request.method,
+        'headers': request.headers,
+        'data': request.data,
+        'path': path
         # ... other request details
     }
 
-    # Forward request to Client application through secure tunnel
+    # Forward request to Client application through socket
     response = forward_request_to_client(request_data)
 
     # Return response to browser
@@ -26,10 +32,9 @@ def handle_request():
 
 
 def forward_request_to_client(request_data):
-    # Establish connection to Client application (e.g., using sockets or a messaging system)
-    # Send request data to Client application
-    # Receive response from Client application
-    return response
+    print(request_data)
+
+    return 'demo response data'
 
 
 def handle_client(client_socket, client_address):
@@ -48,13 +53,23 @@ def handle_client(client_socket, client_address):
     print(f"Connection with {client_address} closed")
 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print("Server listening on port", PORT)
+def socket_listener():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        print("Server listening on port", PORT)
+        s.bind((HOST, PORT))
+        s.listen()
 
-    while True:
-        conn, addr = s.accept()
-        client_thread = threading.Thread(
-            target=handle_client, args=(conn, addr))
-        client_thread.start()
+        while True:
+            conn, addr = s.accept()
+            client_thread = threading.Thread(
+                target=handle_client, args=(conn, addr))
+            client_thread.start()
+
+
+if __name__ == '__main__':
+    # Start Flask app in a separate thread
+    app_thread = threading.Thread(target=app.run)
+    app_thread.start(debug=True)
+
+    # Start socket listener in the main thread
+    socket_listener()
